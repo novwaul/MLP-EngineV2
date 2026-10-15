@@ -1,0 +1,32 @@
+services:
+  sim:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        USER_UID: "${HOST_UID:-1000}"
+        USER_GID: "${HOST_GID:-1000}"
+    image: mlp-engine/sim:latest
+    container_name: sim
+    volumes:
+      - ../:/workspace
+      - ${HOME}/.ciel:/pdk:ro
+    environment:
+      PDK_ROOT: /pdk
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+  librelane:
+    image: ghcr.io/librelane/librelane:3.0.2
+    container_name: librelane
+    volumes:
+      - ../:/workspace
+      - ${HOME}/.ciel:/pdk:ro
+    environment:
+      PDK_ROOT: /pdk
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    command: /bin/sh

@@ -1,0 +1,107 @@
+{
+  "DESIGN_NAME": "CPU_TOP",
+
+  "VERILOG_FILES": [
+    "dir::../../../rtl/common/core_package.sv",
+    "dir::../../../rtl/common/d_flip_flop.sv",
+    "dir::../../../rtl/common/mux2to1.sv",
+    "dir::../../../rtl/common/mux3to1.sv",
+    "dir::../../../rtl/common/mux4to1.sv",
+    "dir::../../../rtl/common/mux5to1.sv",
+    "dir::../../../rtl/common/counter.sv",
+    "dir::../../../rtl/cache/submodule/cache_sram.sv",
+    "dir::../../../rtl/cache/instr_cache.sv",
+    "dir::../../../rtl/mlp_engine/v1/scratch_pad/submodule/scratch_pad_sram.sv",
+    "dir::../../../rtl/mlp_engine/v1/scratch_pad/scratch_pad.sv",
+    "dir::../../../rtl/mlp_engine/v1/core/alu.sv",
+    "dir::../../../rtl/mlp_engine/v1/core/csr.sv",
+    "dir::../../../rtl/mlp_engine/v1/core/decoder.sv",
+    "dir::../../../rtl/mlp_engine/v1/core/regfile.sv",
+    "dir::../../../rtl/mlp_engine/v1/core/systolic_array.sv",
+    "dir::../../../rtl/mlp_engine/v1/core/scalar_core.sv",
+    "dir::../../../rtl/mlp_engine/v1/cpu_top.sv"
+  ],
+
+  "VERILOG_DEFINES": ["USE_POWER_PINS"],
+  
+  "MACROS": {
+    "sky130_sram_1kbyte_1rw1r_8x1024_8": {
+      "gds": ["pdk_dir::libs.ref/sky130_sram_macros/gds/sky130_sram_1kbyte_1rw1r_8x1024_8.gds"],
+      "lef": ["pdk_dir::libs.ref/sky130_sram_macros/lef/sky130_sram_1kbyte_1rw1r_8x1024_8.lef"],
+      "lib": {"*": ["pdk_dir::libs.ref/sky130_sram_macros/lib/sky130_sram_1kbyte_1rw1r_8x1024_8_TT_1p8V_25C.lib"]},
+      "nl": ["dir::../../../rtl/macros/sky130_sram_macros/sky130_sram_1kbyte_1rw1r_8x1024_8.v"],
+      "instances": {
+        "SPAD.SCRATCH_PAD_0.u_sram": {"location": [100,  100], "orientation": "N"},
+        "SPAD.SCRATCH_PAD_1.u_sram": {"location": [700,  100], "orientation": "N"},
+        "SPAD.SCRATCH_PAD_2.u_sram": {"location": [100, 1100], "orientation": "N"},
+        "SPAD.SCRATCH_PAD_3.u_sram": {"location": [700, 1100], "orientation": "N"}
+      }
+    },
+    "sky130_sram_1kbyte_1rw1r_32x256_8": {
+      "gds": ["pdk_dir::libs.ref/sky130_sram_macros/gds/sky130_sram_1kbyte_1rw1r_32x256_8.gds"],
+      "lef": ["pdk_dir::libs.ref/sky130_sram_macros/lef/sky130_sram_1kbyte_1rw1r_32x256_8.lef"],
+      "lib": {"*": ["pdk_dir::libs.ref/sky130_sram_macros/lib/sky130_sram_1kbyte_1rw1r_32x256_8_TT_1p8V_25C.lib"]},
+      "nl": ["dir::../../../rtl/macros/sky130_sram_macros/sky130_sram_1kbyte_1rw1r_32x256_8.v"],
+      "instances": {
+        "ICACHE.ICACHE_SRAM.u_sram_lo": {"location": [1300,  100], "orientation": "N"},
+        "ICACHE.ICACHE_SRAM.u_sram_hi": {"location": [1300, 1100], "orientation": "N"}
+      }
+    }
+  },
+  
+  "CLOCK_PORT": "clk_i",
+  "CLOCK_NET": "clk_i",
+  "CLOCK_PERIOD": 180.0,
+  "STA_THREADS": 1,
+
+  "VDD_NETS": ["vccd1"],
+  "GND_NETS": ["vssd1"],
+  
+  "SYNTH_SIZING": true,
+  "SYNTH_AUTONAME": false,
+  "SYNTH_ABC_BUFFERING": true,
+  "SYNTH_STRATEGY": "DELAY 0",
+  "SYNTH_HIERARCHY_MODE": "deferred_flatten",
+  
+  "FP_SIZING": "absolute",
+  "FP_CORE_UTIL": 35,
+  "FP_MACRO_HORIZONTAL_HALO": 40,
+  "FP_MACRO_VERTICAL_HALO": 40,
+  "PL_TARGET_DENSITY_PCT": 45,
+  
+  "DIE_AREA": "0 0 1840 1840",
+  "CORE_AREA": "20.24 21.76 1819.76 1819.68",
+  
+  "IO_PIN_ORDER_CFG": "dir::config/pin_order.cfg",
+  
+  "RT_CLOCK_MIN_LAYER": "met3",
+  "RT_CLOCK_MAX_LAYER": "met5",
+  
+  "PDN_CORE_RING": true,
+  
+  "RUN_TAP_ENDCAP_INSERTION": true,
+  "RUN_HEURISTIC_DIODE_INSERTION": false,
+  "RUN_ANTENNA_REPAIR": true,
+  "GRT_ANTENNA_REPAIR_DIODE_ONLY": true,
+  
+  "MAGIC_MACRO_STD_CELL_SOURCE": "PDK",
+  
+  "MAGIC_DRC_USE_GDS": true,
+  "MAGIC_DRC_MAGLEFS": [
+    "pdk_dir::libs.ref/sky130_sram_macros/maglef/sky130_sram_1kbyte_1rw1r_8x1024_8.mag",
+    "pdk_dir::libs.ref/sky130_sram_macros/maglef/sky130_sram_1kbyte_1rw1r_32x256_8.mag"
+  ],
+  
+  "pdk::sky130A": {
+    "MAX_FANOUT_CONSTRAINT": 10,
+    "MAX_TRANSITION_CONSTRAINT": 1.0,
+    "PDN_VOFFSET": 4,
+    "PDN_HOFFSET": 4,
+    "PDN_VPITCH": 75,
+    "PDN_HPITCH": 75,
+    "RT_MAX_LAYER": "met5"
+  },
+
+  "USE_SLANG": true,
+  "SLANG_ARGUMENTS": ["--single-unit", "--keep-hierarchy"]
+}

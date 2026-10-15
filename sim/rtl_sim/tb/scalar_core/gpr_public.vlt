@@ -1,0 +1,7 @@
+// Publish just the SRF.GPR array (32-entry register file) so sim_main.cpp
+// can peek it. With this rule we drop --public-flat-rw entirely from the
+// RTL VFLAGS -- every other internal signal stays optimizable.
+
+`verilator_config
+
+public_flat_rd -module "REGFILE" -var "GPR"
