@@ -1,0 +1,17 @@
+// Librelane dissolves SCORE.SRF.GPR into per-bit escaped-id wires
+// inside CPU_TOP; core_tb.sv stitches each 32-bit register back together
+// as gpr25..gpr31 at the testbench top, and only those reassembled wires
+// need C++ visibility. The underlying \SCORE.SRF.GPR[*] bits stay alive
+// via the XMR usage in the concat, so the stdcell instances elsewhere
+// can still fold across cell boundaries (which would be wrecked by a
+// blanket --public-flat-rw on a netlist this large).
+
+`verilator_config
+
+public_flat_rd -module "CORE_TB" -var "gpr25"
+public_flat_rd -module "CORE_TB" -var "gpr26"
+public_flat_rd -module "CORE_TB" -var "gpr27"
+public_flat_rd -module "CORE_TB" -var "gpr28"
+public_flat_rd -module "CORE_TB" -var "gpr29"
+public_flat_rd -module "CORE_TB" -var "gpr30"
+public_flat_rd -module "CORE_TB" -var "gpr31"
