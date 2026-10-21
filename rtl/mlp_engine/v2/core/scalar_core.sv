@@ -17,14 +17,6 @@ module SCALAR_CORE #(
     localparam CWidth            = 12,
     localparam OpWidth           = 5
 )(
-    input logic mem_error,
-    output logic [3:0] mem_wstrb,
-    output logic cmd_valid,
-    output logic [2:0] cmd_op,
-    output logic [31:0] cmd_rs1,cmd_rs2,
-    input logic cmd_ready,
-    input logic [31:0] cmd_result,
-    output logic halted,fault,
     // Basic signals
     input   logic                   clk,
     input   logic                   rstn,
@@ -39,7 +31,19 @@ module SCALAR_CORE #(
     output  logic   [DWidth-1:0]    mem_wdata,
     output  logic   [DWidth-1:0]    mem_addr,
     output  logic                   mem_valid,
-    output  logic                   mem_write
+    output  logic                   mem_write,
+    output  logic   [3:0]           mem_wstrb,
+    input   logic                   mem_error,
+    // Accelerator command interface
+    output  logic                   cmd_valid,
+    output  logic   [2:0]           cmd_op,
+    output  logic   [31:0]          cmd_rs1,
+    output  logic   [31:0]          cmd_rs2,
+    input   logic                   cmd_ready,
+    input   logic   [31:0]          cmd_result,
+    // Status
+    output  logic                   halted,
+    output  logic                   fault
 );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -122,21 +126,33 @@ module SCALAR_CORE #(
 
     logic   [DWidth*2-1:0]          dec_instret;
 
-    logic [31:0] instruction;
-    wire [31:0] decode_instruction=instruction;
+    // Instruction register: the decoder works on the latched instruction
+    logic   [31:0]                  instruction;
+    logic   [31:0]                  decode_instruction;
+
     always_ff @(posedge clk or negedge rstn) begin
-        if(!rstn) instruction<=0;
-        else if(dec_iaddr_en) instruction<=imem_rdata;
+        if (!rstn) begin
+            instruction <= 0;
+        end else if (dec_iaddr_en) begin
+            instruction <= imem_rdata;
+        end
     end
-    logic [DWidth-1:0] alu_res;
-    wire [31:0] access_addr=alu_res;
-    wire access_misaligned=(instruction[14:12]==1 || instruction[14:12]==5) ? access_addr[0] :
-                           instruction[14:12]==2 ? |access_addr[1:0] : 1'b0;
-    wire access_fault=((instruction[6:0]==7'h03 || instruction[6:0]==7'h23) && access_misaligned) ||
-                      (mem_ready && mem_error);
+
+    assign decode_instruction = instruction;
+
+    // Data access fault: misaligned LOAD/STORE or bus error
+    logic   [DWidth-1:0]            alu_res;
+    logic   [31:0]                  access_addr;
+    logic                           access_misaligned;
+    logic                           access_fault;
+
+    assign access_addr       = alu_res;
+    assign access_misaligned = (instruction[14:12] == 1 || instruction[14:12] == 5) ? access_addr[0] :   // LH/LHU/SH
+                               instruction[14:12] == 2 ? |access_addr[1:0] : 1'b0;                       // LW/SW
+    assign access_fault      = ((instruction[6:0] == 7'h03 || instruction[6:0] == 7'h23) && access_misaligned) ||
+                               (mem_ready && mem_error);
+
     DECODER #(.DWidth(DWidth), .OpWidth(OpWidth), .NumofReg(NumofReg), .CWidth(CWidth)) DECODER(
-        .cmd_ready_i(cmd_ready),.mem_fault_i(access_fault),
-        .cmd_valid_o(cmd_valid),.halted_o(halted),.fault_o(fault),
         .clk_i                      (clk),
         .rst_ni                     (rstn),
         .pc_en_o                    (dec_pc_en),
@@ -164,7 +180,12 @@ module SCALAR_CORE #(
         .csr_instret_o              (dec_instret),
         .dmem_ready_i               (mem_ready),
         .dmem_req_o                 (mem_valid),
-        .dmem_write_o               (mem_write)
+        .dmem_write_o               (mem_write),
+        .mem_fault_i                (access_fault),
+        .cmd_ready_i                (cmd_ready),
+        .cmd_valid_o                (cmd_valid),
+        .halted_o                   (halted),
+        .fault_o                    (fault)
     );
 
     logic   [DWidth-1:0]            rf_write_data;
@@ -245,13 +266,16 @@ module SCALAR_CORE #(
 
 ////////////////////////////////////////////////////////////////////////////////
 // Access data memory
-    // Address
-    assign mem_addr={alu_res[31:2],2'b0};
-    assign mem_wstrb=instruction[14:12]==0 ? 4'b0001<<alu_res[1:0] :
-                     instruction[14:12]==1 ? 4'b0011<<alu_res[1:0] : 4'b1111;
-    wire [31:0] lane_rdata=mem_rdata>>(8*alu_res[1:0]);
-    logic [31:0] store_unshifted;
-    assign mem_wdata=store_unshifted<<(8*alu_res[1:0]);
+    // Address: word-aligned address, byte lanes selected by alu_res[1:0]
+    logic   [31:0]                  lane_rdata;
+    logic   [31:0]                  store_unshifted;
+
+    assign mem_addr   = {alu_res[31:2], 2'b0};
+    assign mem_wstrb  = instruction[14:12] == 0 ? 4'b0001 << alu_res[1:0] :   // SB
+                        instruction[14:12] == 1 ? 4'b0011 << alu_res[1:0] :   // SH
+                                                  4'b1111;                    // SW
+    assign lane_rdata = mem_rdata >> (8 * alu_res[1:0]);
+    assign mem_wdata  = store_unshifted << (8 * alu_res[1:0]);
 
     logic   [DWidth-1:0]            data_rdata;
 
@@ -265,9 +289,9 @@ module SCALAR_CORE #(
         .select_i                   (dec_ls_ext_sel),
         .data_o                     (data_rdata)
     );
-    
+
     // Data write
-    MUX3TO1 #(.DWidth(DWidth)) MUX_ST( 
+    MUX3TO1 #(.DWidth(DWidth)) MUX_ST(
         .data0_i                    ({{24{1'b0}}, rf_read2_data[7:0]}),                            // Store Byte
         .data1_i                    ({{16{1'b0}}, rf_read2_data[15:0]}),                           // Store Halfword
         .data2_i                    (rf_read2_data[31:0]),                                         // Store Word
@@ -277,11 +301,14 @@ module SCALAR_CORE #(
 
 ////////////////////////////////////////////////////////////////////////////////
 // Write back
-    logic [DWidth-1:0] standard_write_data;
-    assign rf_write_data=cmd_valid ? cmd_result : standard_write_data;
+    logic   [DWidth-1:0]            standard_write_data;
+
+    // An accelerator command writes its result instead
+    assign rf_write_data = cmd_valid ? cmd_result : standard_write_data;
+
     MUX4TO1 #(.DWidth(DWidth)) MUX_WB(
         .data0_i                    (alu_res),
-        .data1_i                    (data_rdata), 
+        .data1_i                    (data_rdata),
         .data2_i                    ({imem_addr[DWidth-1:2], 2'b0}),
         .data3_i                    (csr_read_data),
         .select_i                   (dec_rf_write_sel),
@@ -296,7 +323,9 @@ module SCALAR_CORE #(
     );
 
 ////////////////////////////////////////////////////////////////////////////////
+// Accelerator command
+    assign cmd_op  = instruction[14:12];
+    assign cmd_rs1 = rf_read1_data;
+    assign cmd_rs2 = rf_read2_data;
 
-    assign cmd_op=instruction[14:12];
-    assign cmd_rs1=rf_read1_data;assign cmd_rs2=rf_read2_data;
 endmodule

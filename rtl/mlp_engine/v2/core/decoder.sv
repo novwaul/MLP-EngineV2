@@ -17,8 +17,6 @@ module DECODER #(
     parameter CWidth   = 12,
     localparam AWidth  = $clog2(NumofReg)
 )(
-    input logic cmd_ready_i,mem_fault_i,
-    output logic cmd_valid_o,halted_o,fault_o,
     // Basic signals
     input   logic                   clk_i,
     input   logic                   rst_ni,
@@ -55,7 +53,14 @@ module DECODER #(
     // Data memory
     input   logic                   dmem_ready_i,
     output  logic                   dmem_req_o,
-    output  logic                   dmem_write_o
+    output  logic                   dmem_write_o,
+    input   logic                   mem_fault_i,
+    // Accelerator command
+    input   logic                   cmd_ready_i,
+    output  logic                   cmd_valid_o,
+    // Status
+    output  logic                   halted_o,
+    output  logic                   fault_o
 );
 
     // MUX_ALU_A
@@ -94,6 +99,11 @@ module DECODER #(
     localparam      IMM             = 7'b0010011;
     localparam      REG             = 7'b0110011;
     localparam      CSR             = 7'b1110011;
+    localparam      MISC_MEM        = 7'b0001111;              // FENCE (no-op)
+    localparam      CUSTOM0         = 7'b0001011;              // Accelerator command
+
+    // EBREAK stops the core
+    localparam      EBREAK          = 32'h00100073;
 
     // Branch type
     localparam      BEQ             = 3'b000;
@@ -126,22 +136,39 @@ module DECODER #(
     logic                           csr_wb_en;
     logic                           dmem_rw;
 
-    wire custom = imem_rdata_i[6:0]==7'h0b;
-    wire stop_insn = imem_rdata_i==32'h00100073;
-    wire bad_insn = custom ? (imem_rdata_i[31:25]!=0 || imem_rdata_i[14:12]>5) :
-        (imem_rdata_i[6:0]==REG && imem_rdata_i[31:25]==1 &&
-         imem_rdata_i[14:12]!=0 && imem_rdata_i[14:12]!=2) ||
-        !(imem_rdata_i[6:0] inside {LUI,AUIPC,JAL,JALR,BRANCH,LOAD,STORE,IMM,REG,CSR,7'h0f}) ||
-        (imem_rdata_i[6:0]==CSR && imem_rdata_i[14:12]==0 && !stop_insn);
-    assign halted_o=dec_state_q==StStop;
+    logic                           custom;
+    logic                           stop_insn;
+    logic                           bad_insn;
+
+    // Instruction classification
+    //   custom   : accelerator command (custom-0)
+    //   stop_insn: EBREAK, stops the core
+    //   bad_insn : unsupported instruction -> fault and stop
+    //              (custom-0 with funct7!=0 or funct3>5, M-extension other
+    //               than MUL/MULHSU, unknown opcode, other SYSTEM funct3=0)
+    assign custom    = imem_rdata_i[6:0] == CUSTOM0;
+    assign stop_insn = imem_rdata_i == EBREAK;
+    assign bad_insn  = custom ? (imem_rdata_i[31:25] != 0 || imem_rdata_i[14:12] > 5) :
+                       (imem_rdata_i[6:0] == REG && imem_rdata_i[31:25] == 1 &&
+                        imem_rdata_i[14:12] != 0 && imem_rdata_i[14:12] != 2) ||
+                       !(imem_rdata_i[6:0] inside {LUI, AUIPC, JAL, JALR, BRANCH, LOAD, STORE, IMM, REG, CSR, MISC_MEM}) ||
+                       (imem_rdata_i[6:0] == CSR && imem_rdata_i[14:12] == 0 && !stop_insn);
+
+    // Status
+    assign halted_o = dec_state_q == StStop;
+
     always_ff @(posedge clk_i or negedge rst_ni) begin
-        if(!rst_ni) fault_o<=0;
-        else if((dec_state_q==StExecute && bad_insn) ||
-                ((dec_state_q==StExecute || dec_state_q==StDmem) && mem_fault_i)) fault_o<=1;
+        if (!rst_ni) begin
+            fault_o <= 0;
+        end else if ((dec_state_q == StExecute && bad_insn) ||
+                     ((dec_state_q == StExecute || dec_state_q == StDmem) && mem_fault_i)) begin
+            fault_o <= 1;
+        end
     end
+
     // Combinational logic for next state & logic for outputs
     always_comb begin
-        cmd_valid_o=0;
+        cmd_valid_o = `FALSE;
         unique case (dec_state_q)
             StFetch: begin
                 // If instruction is ready, update pc and go to execute
@@ -196,26 +223,54 @@ module DECODER #(
                 dmem_req_o       = `FALSE;
             end
             StCustom: begin
-                dec_state_d=cmd_ready_i ? StFetch : StCustom;
-                cmd_valid_o=1;
-                imem_read_o=0;pc_en_o=0;iaddr_en_o=0;pc_br_en_o=0;
-                rf_write_en_o=cmd_ready_i;csr_write_en_o=0;
-                dmem_write_o=0;dmem_req_o=0;
+                // Hold the accelerator command until it is accepted, then
+                // write its result to rd and go to fetch
+                dec_state_d      = cmd_ready_i ? StFetch : StCustom;
+                cmd_valid_o      = `TRUE;
+                imem_read_o      = `FALSE;
+                pc_en_o          = `FALSE;
+                iaddr_en_o       = `FALSE;
+                pc_br_en_o       = `FALSE;
+                rf_write_en_o    = cmd_ready_i;
+                csr_write_en_o   = `FALSE;
+                dmem_write_o     = `FALSE;
+                dmem_req_o       = `FALSE;
             end
-            default: begin
-                dec_state_d=StStop;
-                imem_read_o=0;pc_en_o=0;iaddr_en_o=0;pc_br_en_o=0;
-                rf_write_en_o=0;csr_write_en_o=0;
-                dmem_write_o=0;dmem_req_o=0;
+            default: begin // StStop
+                // Stay stopped
+                dec_state_d      = StStop;
+                imem_read_o      = `FALSE;
+                pc_en_o          = `FALSE;
+                iaddr_en_o       = `FALSE;
+                pc_br_en_o       = `FALSE;
+                rf_write_en_o    = `FALSE;
+                csr_write_en_o   = `FALSE;
+                dmem_write_o     = `FALSE;
+                dmem_req_o       = `FALSE;
             end
         endcase
-        if(dec_state_q==StExecute && (custom || stop_insn || bad_insn || mem_fault_i)) begin
-            dec_state_d=(stop_insn || bad_insn || mem_fault_i) ? StStop : StCustom;
-            imem_read_o=0;pc_en_o=0;iaddr_en_o=0;pc_br_en_o=0;
-            rf_write_en_o=0;csr_write_en_o=0;dmem_write_o=0;dmem_req_o=0;
+
+        // Custom, stop, unsupported and faulting instructions override the
+        // execute decision: stop the core, or issue the accelerator command
+        if (dec_state_q == StExecute && (custom || stop_insn || bad_insn || mem_fault_i)) begin
+            dec_state_d      = (stop_insn || bad_insn || mem_fault_i) ? StStop : StCustom;
+            imem_read_o      = `FALSE;
+            pc_en_o          = `FALSE;
+            iaddr_en_o       = `FALSE;
+            pc_br_en_o       = `FALSE;
+            rf_write_en_o    = `FALSE;
+            csr_write_en_o   = `FALSE;
+            dmem_write_o     = `FALSE;
+            dmem_req_o       = `FALSE;
         end
-        if(dec_state_q==StDmem && mem_fault_i) begin
-            dec_state_d=StStop;imem_read_o=0;rf_write_en_o=0;dmem_req_o=0;dmem_write_o=0;
+
+        // A data access fault stops the core
+        if (dec_state_q == StDmem && mem_fault_i) begin
+            dec_state_d      = StStop;
+            imem_read_o      = `FALSE;
+            rf_write_en_o    = `FALSE;
+            dmem_req_o       = `FALSE;
+            dmem_write_o     = `FALSE;
         end
     end
 
@@ -542,13 +597,25 @@ module DECODER #(
                     end
                 endcase
             end
-            7'h0b: begin
-                alu_b_imm_o=0;alu_a_sel_o=READ1_DATA;alu_b_sel_o=READ2_DATA;
-                alu_op_sel_o=`ADD;
-                rf_read1_addr_o=imem_rdata_i[19:15];rf_read2_addr_o=imem_rdata_i[24:20];
-                rf_write_addr_o=imem_rdata_i[11:7];rf_write_sel_o=WB_ALU_PC;
-                br_sel_o=0;jp_br=0;rf_wb_en=0;ld_st=0;dmem_rw=0;ls_ext_sel_o=0;
-                csr_wb_en=0;csr_read_addr_o=0;csr_write_addr_o=0;csr_write_sel_o=0;
+            CUSTOM0: begin
+                alu_b_imm_o          = '0;                     // Doesn't matter - Not use IMM
+                alu_a_sel_o          = READ1_DATA;             // GPR[rs1]
+                alu_b_sel_o          = READ2_DATA;             // GPR[rs2]
+                alu_op_sel_o         = `ADD;
+                rf_read1_addr_o      = imem_rdata_i[19:15];    // Command rs1
+                rf_read2_addr_o      = imem_rdata_i[24:20];    // Command rs2
+                rf_write_addr_o      = imem_rdata_i[11:7];     // Command result
+                rf_write_sel_o       = WB_ALU_PC;              // Replaced by the command result
+                br_sel_o             = '0;                     // Doesn't matter - Not branch
+                jp_br                = `FALSE;
+                rf_wb_en             = `FALSE;                 // Written in StCustom
+                ld_st                = `FALSE;
+                dmem_rw              = '0;                     // Doesn't matter - Not LD/ST
+                ls_ext_sel_o         = '0;                     // Doesn't matter - Not LD/ST
+                csr_wb_en            = `FALSE;
+                csr_read_addr_o      = '0;                     // Doesn't matter - Not CSR
+                csr_write_addr_o     = '0;                     // Doesn't matter - Not CSR
+                csr_write_sel_o      = '0;                     // Doesn't matter - Not CSR
             end
             // The first instruction (all zero case)
             default: begin
