@@ -1,0 +1,13 @@
+# LibreLane run outputs
+librelane/**/runs/
+
+# Build outputs
+build/
+
+# Test data
+program/test_code/image/
+program/test_code/label/
+program/test_code/parameter/
+
+# macOS
+.DS_Store
