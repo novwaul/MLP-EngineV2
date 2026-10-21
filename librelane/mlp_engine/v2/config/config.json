@@ -1,4 +1,8 @@
 {
+  "meta": {
+    "flow": "Classic",
+    "substituting_steps": {"+OpenROAD.RepairAntennas": "OpenROAD.RepairDesignPostGRT"}
+  },
   "DESIGN_NAME": "MLP_V2_TOP",
   "VERILOG_FILES": [
     "dir::../../../rtl/common/core_package.sv",
@@ -33,7 +37,7 @@
       ],
       "lib": {
         "*": [
-          "pdk_dir::libs.ref/sky130_sram_macros/lib/sky130_sram_1kbyte_1rw1r_32x256_8_TT_1p8V_25C.lib"
+          "dir::../../../rtl/macros/sky130_sram_macros/lib/sky130_sram_1kbyte_1rw1r_32x256_8_TT_1p8V_25C.lib"
         ]
       },
       "nl": [
@@ -42,44 +46,32 @@
       "instances": {
         "ICACHE.ICACHE_SRAM.u_sram_lo": {
           "location": [
-            1300,
+            100,
             100
           ],
-          "orientation": "N"
+          "orientation": "FS"
         },
         "ICACHE.ICACHE_SRAM.u_sram_hi": {
           "location": [
-            1300,
-            1100
+            680,
+            100
           ],
-          "orientation": "N"
+          "orientation": "FS"
         },
         "spad.banks[0].u_sram": {
-          "location": [
-            400,
-            100
-          ],
-          "orientation": "FS"
+          "location": [100, 1700],
+          "orientation": "N"
         },
         "spad.banks[1].u_sram": {
-          "location": [
-            2250,
-            100
-          ],
-          "orientation": "FS"
+          "location": [610, 1700],
+          "orientation": "N"
         },
         "spad.banks[2].u_sram": {
-          "location": [
-            400,
-            2450
-          ],
+          "location": [1120, 1700],
           "orientation": "N"
         },
         "spad.banks[3].u_sram": {
-          "location": [
-            2250,
-            2450
-          ],
+          "location": [1630, 1700],
           "orientation": "N"
         }
       }
@@ -105,8 +97,8 @@
   "FP_MACRO_HORIZONTAL_HALO": 40,
   "FP_MACRO_VERTICAL_HALO": 40,
   "PL_TARGET_DENSITY_PCT": 45,
-  "DIE_AREA": "0 0 3000 3000",
-  "CORE_AREA": "20.24 21.76 2979.88 2978.4",
+  "DIE_AREA": "0 0 2200 2200",
+  "CORE_AREA": "20.24 21.76 2179.48 2176.0",
   "IO_PIN_ORDER_CFG": "dir::config/pin_order.cfg",
   "RT_CLOCK_MIN_LAYER": "met3",
   "RT_CLOCK_MAX_LAYER": "met5",
@@ -114,7 +106,30 @@
   "RUN_TAP_ENDCAP_INSERTION": true,
   "RUN_HEURISTIC_DIODE_INSERTION": false,
   "RUN_ANTENNA_REPAIR": true,
-  "GRT_ANTENNA_REPAIR_DIODE_ONLY": true,
+  "RUN_POST_GRT_RESIZER_TIMING": true,
+  "RUN_POST_GRT_DESIGN_REPAIR": true,
+  "DESIGN_REPAIR_MAX_WIRE_LENGTH": 400,
+  "GRT_DESIGN_REPAIR_MAX_WIRE_LENGTH": 200,
+  "PL_RESIZER_SETUP_SLACK_MARGIN": 2.0,
+  "GRT_RESIZER_SETUP_SLACK_MARGIN": 2.0,
+  "PNR_SDC_FILE": "dir::config/pnr.sdc",
+  "SIGNOFF_SDC_FILE": "dir::config/signoff.sdc",
+  "EXTRA_EXCLUDED_CELLS": ["sky130_fd_sc_hd__clkdlybuf4s15_2", "sky130_fd_sc_hd__clkdlybuf4s18_2", "sky130_fd_sc_hd__dlygate4sd1_1", "sky130_fd_sc_hd__dlygate4sd2_1", "sky130_fd_sc_hd__dlygate4sd3_1", "sky130_fd_sc_hd__dlymetal6s2s_1", "sky130_fd_sc_hd__dlymetal6s4s_1", "sky130_fd_sc_hd__dlymetal6s6s_1", "sky130_fd_sc_hd__buf_1", "sky130_fd_sc_hd__clkbuf_1", "sky130_fd_sc_hd__clkdlybuf4s25_1", "sky130_fd_sc_hd__clkdlybuf4s25_2", "sky130_fd_sc_hd__clkdlybuf4s50_1", "sky130_fd_sc_hd__clkdlybuf4s50_2"],
+  "CTS_SINK_CLUSTERING_SIZE": 8,
+  "CTS_MAX_CAP": 0.15,
+  "CTS_CLK_MAX_WIRE_LENGTH": 400,
+  "SYNTH_CLK_DRIVING_CELL": "sky130_fd_sc_hd__clkbuf_8/X",
+  "RSZ_CORNERS": ["nom_tt_025C_1v80", "max_ss_100C_1v60", "min_ff_n40C_1v95"],
+  "CTS_CORNERS": ["nom_tt_025C_1v80", "max_ss_100C_1v60", "min_ff_n40C_1v95"],
+  "LAYERS_RC": {"*": {
+    "li1":  {"res": 7.176e-02, "cap": 1.499e-04},
+    "met1": {"res": 8.929e-04, "cap": 1.72375e-04},
+    "met2": {"res": 8.929e-04, "cap": 1.36233e-04},
+    "met3": {"res": 1.567e-04, "cap": 2.14962e-04},
+    "met4": {"res": 1.567e-04, "cap": 1.48128e-04},
+    "met5": {"res": 1.781e-05, "cap": 1.54087e-04}
+  }},
+  "GRT_ANTENNA_REPAIR_DIODE_ONLY": false,
   "MAGIC_MACRO_STD_CELL_SOURCE": "PDK",
   "MAGIC_DRC_USE_GDS": true,
   "MAGIC_DRC_MAGLEFS": [

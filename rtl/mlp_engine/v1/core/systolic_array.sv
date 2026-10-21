@@ -85,34 +85,44 @@ module SYSTOLIC_ARRAY
         end
     end
 
-    // Psum Store State                    
-    always_ff @(negedge bias_ready_i or negedge rstn) begin      
+    // Index counters run on clk. bias_ready_i/data_ready_i are 1-cycle pulses,
+    // so advancing on the same edge as the write matches the old negedge-clocked
+    // counters. data_req stays high for the whole memory access, so ridx keeps
+    // advancing on its falling edge, detected synchronously.
+    logic data_req_q;
+
+    // Psum Store State
+    always_ff @(posedge clk or negedge rstn) begin
         if (!rstn) begin
-            for (int i = 0; i < Rows; i++) begin             
-                pidx[i] <= init[i];                 
-            end  
-        end else begin           
-            for (int i = 0; i < Rows; i++) begin             
-                pidx[i] <= pidx[i] + 'd1;                 
-            end  
+            for (int i = 0; i < Rows; i++) begin
+                pidx[i] <= init[i];
+            end
+        end else if (bias_ready_i) begin
+            for (int i = 0; i < Rows; i++) begin
+                pidx[i] <= pidx[i] + 'd1;
+            end
         end
     end
 
-    // Store State  
-    always_ff @(negedge data_ready_i or negedge rstn) begin      
+    // Store State
+    always_ff @(posedge clk or negedge rstn) begin
         if (!rstn) begin
             sidx <= 'd0;
-        end else begin           
+        end else if (data_ready_i) begin
             sidx <= sidx + 'd1;
         end
     end
 
     // Read State
-    always_ff @(negedge data_req  or negedge rstn) begin    
+    always_ff @(posedge clk or negedge rstn) begin
         if (!rstn) begin
+            data_req_q <= 1'b0;
             ridx <= 'd0;
-        end else begin             
-            ridx <= ridx + 'd1;
+        end else begin
+            data_req_q <= data_req;
+            if (data_req_q & ~data_req) begin
+                ridx <= ridx + 'd1;
+            end
         end
     end
 
