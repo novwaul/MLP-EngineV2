@@ -2,6 +2,26 @@
 
 <p align="center"><img src="../../../docs/arch/v1.svg" alt="mlp_engine/v1 architecture" width="900"></p>
 
+## How it computes
+
+Four images are processed at a time. Array row *i* is image *i*, and array
+column *j* is output neuron *j* (`program/test_code/src/mlp_engine/v1/mlp.c`).
+
+1. **Setup:** the core copies all biases (once) and the current batch of four
+   input images into the scratchpad with `SH`.
+2. **Per 4-output block of a layer:**
+   - `LB` × 4 loads the four biases from the scratchpad into the partial sums.
+   - For each input element *k*: `LHU` × 4 loads four weights from external
+     memory, `LH` × 4 loads four inputs from the scratchpad, and `MULH` makes
+     all 16 PEs do `psum += input × weight` in one cycle. That is nine
+     instructions per 16 MACs.
+   - `MULHU` applies ReLU to all partial sums.
+   - `LBU` × 16 moves the compressed outputs to the scratchpad (layers 1 and
+     2), or `SB` × 16 writes them to external memory (layer 3).
+3. Layer 1's output stays in the scratchpad, and layer 2's output overwrites
+   the input area. The core takes the argmax of the four results in external
+   memory.
+
 ## RTL fix for PnR
 
 `core/systolic_array.sv` had three index counters clocked by the falling edge
