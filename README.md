@@ -7,7 +7,7 @@ open-source sky130 implementation flow. **`mlp_engine/v2` is the main design.**
 | Design | Top module | Description |
 |---|---|---|
 | `scalar_core` | `CPU_TOP` | Multi-cycle RV32IM core + instruction cache. Software-only inference. |
-| `mlp_engine/v1` | `CPU_TOP` | Baseline core + 4×4 broadcast MAC array + 4 KB scratchpad. Controlled by repurposed standard instructions. See [the v1 RTL fix for PnR](rtl/mlp_engine/v1/README.md). |
+| `mlp_engine/v1` | `CPU_TOP` | Baseline core + 4×4 broadcast MAC array + 4 KB scratchpad. Controlled by repurposed standard instructions. |
 | `mlp_engine/v2` | `MLP_V2_TOP` | Extended baseline core + independent accelerator + 4 KB scratchpad + data-bus arbiter. Controlled by custom-0 instructions. |
 
 All three designs use LibreLane 3.0.2 on sky130A with one shared set of PnR
