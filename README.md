@@ -4,11 +4,11 @@ This repository contains three RISC-V designs that run the same 3-layer MLP
 MNIST classifier, along with their programs, Verilator testbenches, and an
 open-source sky130 implementation flow. **`mlp_engine/v2` is the main design.**
 
-| Design | Top module | Description | Details |
-|---|---|---|---|
-| `scalar_core` | `CPU_TOP` | Multi-cycle RV32IM core + instruction cache. Software-only inference. | [rtl/scalar_core](rtl/scalar_core/README.md) |
-| `mlp_engine/v1` | `CPU_TOP` | Baseline core + 4×4 broadcast MAC array + 4 KB scratchpad. Controlled by repurposed standard instructions. | [rtl/mlp_engine/v1](rtl/mlp_engine/v1/README.md) |
-| `mlp_engine/v2` | `MLP_V2_TOP` | Extended baseline core + independent accelerator + 4 KB scratchpad + data-bus arbiter. Controlled by custom-0 instructions. | [rtl/mlp_engine/v2](rtl/mlp_engine/v2/README.md) |
+| Design | Top module | Description |
+|---|---|---|
+| `scalar_core` | `CPU_TOP` | Multi-cycle RV32IM core + instruction cache. Software-only inference. |
+| `mlp_engine/v1` | `CPU_TOP` | Baseline core + 4×4 broadcast MAC array + 4 KB scratchpad. Controlled by repurposed standard instructions. See [the v1 RTL fix for PnR](rtl/mlp_engine/v1/README.md). |
+| `mlp_engine/v2` | `MLP_V2_TOP` | Extended baseline core + independent accelerator + 4 KB scratchpad + data-bus arbiter. Controlled by custom-0 instructions. |
 
 All three designs use LibreLane 3.0.2 on sky130A with one shared set of PnR
 settings ([librelane/README.md](librelane/README.md)), and all three pass PnR
@@ -36,9 +36,6 @@ on a 2200×2200 µm die.
 - **Memory:** a round-robin, registered data-bus arbiter shares the external
   data port and the 4 KB scratchpad (0x4000–0x4FFF) between the core and the
   DMA. Layer outputs stay in the scratchpad and feed the next layer.
-
-See [rtl/mlp_engine/v2/README.md](rtl/mlp_engine/v2/README.md) for the
-blocks, double buffering, `pack()`, and data widths.
 
 ## Motivation for v1 → v2
 
