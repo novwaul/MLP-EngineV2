@@ -1,0 +1,243 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="820" viewBox="0 0 1100 820">
+
+<style>
+  .bg    { fill: #ffffff; }
+  .top   { fill: #f6f8fb; stroke: #6b7785; stroke-width: 2; stroke-dasharray: 8 5; }
+  .logic { fill: #dceaff; stroke: #3b6fb6; stroke-width: 1.6; }
+  .inner { fill: #ffffff; stroke: #3b6fb6; stroke-width: 1.2; }
+  .reg   { fill: #fff3b8; stroke: #b39500; stroke-width: 1.4; }
+  .sram  { fill: #ffe0bf; stroke: #d27a1e; stroke-width: 1.6; }
+  .sramc { fill: #fff6ec; stroke: #d27a1e; stroke-width: 1.6; }
+  .acc   { fill: #def5e1; stroke: #2f8f45; stroke-width: 1.6; }
+  .acci  { fill: #ffffff; stroke: #2f8f45; stroke-width: 1.2; }
+  .pe    { fill: #b9e7c2; stroke: #2f8f45; stroke-width: 1.2; }
+  .ext   { fill: #eceff2; stroke: #7a838c; stroke-width: 1.6; }
+  .wire  { stroke: #33414f; stroke-width: 1.8; fill: none; }
+  .bus   { stroke: #33414f; stroke-width: 4; fill: none; }
+  .bc    { stroke: #2f8f45; stroke-width: 1.6; fill: none; }
+  text   { font-family: Helvetica, Arial, sans-serif; fill: #1d2730; }
+  .h     { font-size: 20px; font-weight: bold; }
+  .t     { font-size: 15px; font-weight: bold; }
+  .s     { font-size: 12.5px; }
+  .xs    { font-size: 11px; fill: #45525e; }
+  .lbl   { font-size: 11.5px; fill: #33414f; font-style: italic; }
+</style>
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#33414f"/>
+  </marker>
+  <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#2f8f45"/>
+  </marker>
+</defs>
+
+<rect width="100%" height="100%" class="bg"/>
+<text x="20" y="34" class="h" text-anchor="start">mlp_engine/v1  —  CPU_TOP</text>
+<rect x="20" y="52" width="1060" height="600" rx="12" class="top"/>
+<text x="34" y="74" class="xs" text-anchor="start">CPU_TOP</text>
+<rect x="50" y="90" width="320" height="230" rx="10" class="logic"/>
+<text x="64" y="114" class="t" text-anchor="start">INSTR_CACHE</text>
+<text x="64" y="132" class="xs" text-anchor="start">direct-mapped, 128 lines × 32-bit</text>
+<rect x="64" y="146" width="138.0" height="50" rx="8" class="inner"/>
+<text x="133.0" y="168.5" class="s" text-anchor="middle">Cache FSM</text>
+<text x="133.0" y="186.5" class="s" text-anchor="middle">Idle/Read/Write/Reset</text>
+<rect x="218.0" y="146" width="138.0" height="50" rx="8" class="reg"/>
+<text x="287.0" y="168.5" class="s" text-anchor="middle">latched_instr</text>
+<text x="287.0" y="186.5" class="s" text-anchor="middle">last hit</text>
+<text x="64" y="218" class="xs" text-anchor="start">CACHE_SRAM: 56-bit {valid, tag, data}</text>
+<rect x="64" y="226" width="138.0" height="78" rx="8" class="sram"/>
+<text x="133.0" y="255.0" class="s" text-anchor="middle">u_sram_lo</text>
+<text x="133.0" y="273.0" class="s" text-anchor="middle">sky130_sram_1kbyte</text>
+<text x="133.0" y="288.0" class="s" text-anchor="middle">1rw1r_32x256_8</text>
+<rect x="218.0" y="226" width="138.0" height="78" rx="8" class="sram"/>
+<text x="287.0" y="255.0" class="s" text-anchor="middle">u_sram_hi</text>
+<text x="287.0" y="273.0" class="s" text-anchor="middle">sky130_sram_1kbyte</text>
+<text x="287.0" y="288.0" class="s" text-anchor="middle">1rw1r_32x256_8</text>
+<rect x="440" y="90" width="620" height="360" rx="10" class="logic"/>
+<text x="454" y="114" class="t" text-anchor="start">SCALAR_CORE</text>
+<text x="454" y="132" class="xs" text-anchor="start">baseline core + array control</text>
+<rect x="458" y="145" width="272" height="70" rx="8" class="inner"/>
+<text x="594.0" y="170.0" class="s" text-anchor="middle">DECODER (multi-cycle FSM)</text>
+<text x="594.0" y="188.0" class="s" text-anchor="middle">LB / LH / LHU / SB / LBU / MULH / MULHU</text>
+<text x="594.0" y="203.0" class="s" text-anchor="middle">decoded as array commands</text>
+<rect x="458" y="228" width="128" height="50" rx="8" class="inner"/>
+<text x="522.0" y="250.5" class="s" text-anchor="middle">REGFILE</text>
+<text x="522.0" y="268.5" class="s" text-anchor="middle">32 × 32</text>
+<rect x="602" y="228" width="128" height="50" rx="8" class="inner"/>
+<text x="666.0" y="258.0" class="s" text-anchor="middle">ALU</text>
+<rect x="458" y="290" width="128" height="46" rx="8" class="inner"/>
+<text x="522.0" y="318.0" class="s" text-anchor="middle">CSR</text>
+<rect x="602" y="290" width="128" height="46" rx="8" class="reg"/>
+<text x="666.0" y="318.0" class="s" text-anchor="middle">PC / IADDR</text>
+<text x="458" y="362" class="xs" text-anchor="start">load write-back data → array data_i</text>
+<text x="458" y="378" class="xs" text-anchor="start">(one element per instruction)</text>
+<rect x="748" y="140" width="296" height="296" rx="10" class="acc"/>
+<text x="762" y="164" class="t" text-anchor="start">SYSTOLIC_ARRAY</text>
+<text x="762" y="182" class="xs" text-anchor="start">4×4, 9-bit data, 18-bit psums, broadcast</text>
+<rect x="860" y="190" width="30" height="20" rx="4" class="reg"/>
+<text x="875" y="204" class="xs" text-anchor="middle">w0</text>
+<path d="M875,210 L875,388" class="bc"/>
+<path d="M875,240 L870,240" class="bc"/>
+<circle cx="875" cy="240" r="2.5" fill="#2f8f45"/>
+<path d="M875,284 L870,284" class="bc"/>
+<circle cx="875" cy="284" r="2.5" fill="#2f8f45"/>
+<path d="M875,328 L870,328" class="bc"/>
+<circle cx="875" cy="328" r="2.5" fill="#2f8f45"/>
+<path d="M875,372 L870,372" class="bc"/>
+<circle cx="875" cy="372" r="2.5" fill="#2f8f45"/>
+<rect x="904" y="190" width="30" height="20" rx="4" class="reg"/>
+<text x="919" y="204" class="xs" text-anchor="middle">w1</text>
+<path d="M919,210 L919,388" class="bc"/>
+<path d="M919,240 L914,240" class="bc"/>
+<circle cx="919" cy="240" r="2.5" fill="#2f8f45"/>
+<path d="M919,284 L914,284" class="bc"/>
+<circle cx="919" cy="284" r="2.5" fill="#2f8f45"/>
+<path d="M919,328 L914,328" class="bc"/>
+<circle cx="919" cy="328" r="2.5" fill="#2f8f45"/>
+<path d="M919,372 L914,372" class="bc"/>
+<circle cx="919" cy="372" r="2.5" fill="#2f8f45"/>
+<rect x="948" y="190" width="30" height="20" rx="4" class="reg"/>
+<text x="963" y="204" class="xs" text-anchor="middle">w2</text>
+<path d="M963,210 L963,388" class="bc"/>
+<path d="M963,240 L958,240" class="bc"/>
+<circle cx="963" cy="240" r="2.5" fill="#2f8f45"/>
+<path d="M963,284 L958,284" class="bc"/>
+<circle cx="963" cy="284" r="2.5" fill="#2f8f45"/>
+<path d="M963,328 L958,328" class="bc"/>
+<circle cx="963" cy="328" r="2.5" fill="#2f8f45"/>
+<path d="M963,372 L958,372" class="bc"/>
+<circle cx="963" cy="372" r="2.5" fill="#2f8f45"/>
+<rect x="992" y="190" width="30" height="20" rx="4" class="reg"/>
+<text x="1007" y="204" class="xs" text-anchor="middle">w3</text>
+<path d="M1007,210 L1007,388" class="bc"/>
+<path d="M1007,240 L1002,240" class="bc"/>
+<circle cx="1007" cy="240" r="2.5" fill="#2f8f45"/>
+<path d="M1007,284 L1002,284" class="bc"/>
+<circle cx="1007" cy="284" r="2.5" fill="#2f8f45"/>
+<path d="M1007,328 L1002,328" class="bc"/>
+<circle cx="1007" cy="328" r="2.5" fill="#2f8f45"/>
+<path d="M1007,372 L1002,372" class="bc"/>
+<circle cx="1007" cy="372" r="2.5" fill="#2f8f45"/>
+<rect x="764" y="257" width="36" height="20" rx="4" class="reg"/>
+<text x="782" y="271" class="xs" text-anchor="middle">i0</text>
+<path d="M800,267 L996,267" class="bc"/>
+<path d="M848,267 L848,262" class="bc"/>
+<circle cx="848" cy="267" r="2.5" fill="#2f8f45"/>
+<path d="M892,267 L892,262" class="bc"/>
+<circle cx="892" cy="267" r="2.5" fill="#2f8f45"/>
+<path d="M936,267 L936,262" class="bc"/>
+<circle cx="936" cy="267" r="2.5" fill="#2f8f45"/>
+<path d="M980,267 L980,262" class="bc"/>
+<circle cx="980" cy="267" r="2.5" fill="#2f8f45"/>
+<rect x="764" y="301" width="36" height="20" rx="4" class="reg"/>
+<text x="782" y="315" class="xs" text-anchor="middle">i1</text>
+<path d="M800,311 L996,311" class="bc"/>
+<path d="M848,311 L848,306" class="bc"/>
+<circle cx="848" cy="311" r="2.5" fill="#2f8f45"/>
+<path d="M892,311 L892,306" class="bc"/>
+<circle cx="892" cy="311" r="2.5" fill="#2f8f45"/>
+<path d="M936,311 L936,306" class="bc"/>
+<circle cx="936" cy="311" r="2.5" fill="#2f8f45"/>
+<path d="M980,311 L980,306" class="bc"/>
+<circle cx="980" cy="311" r="2.5" fill="#2f8f45"/>
+<rect x="764" y="345" width="36" height="20" rx="4" class="reg"/>
+<text x="782" y="359" class="xs" text-anchor="middle">i2</text>
+<path d="M800,355 L996,355" class="bc"/>
+<path d="M848,355 L848,350" class="bc"/>
+<circle cx="848" cy="355" r="2.5" fill="#2f8f45"/>
+<path d="M892,355 L892,350" class="bc"/>
+<circle cx="892" cy="355" r="2.5" fill="#2f8f45"/>
+<path d="M936,355 L936,350" class="bc"/>
+<circle cx="936" cy="355" r="2.5" fill="#2f8f45"/>
+<path d="M980,355 L980,350" class="bc"/>
+<circle cx="980" cy="355" r="2.5" fill="#2f8f45"/>
+<rect x="764" y="389" width="36" height="20" rx="4" class="reg"/>
+<text x="782" y="403" class="xs" text-anchor="middle">i3</text>
+<path d="M800,399 L996,399" class="bc"/>
+<path d="M848,399 L848,394" class="bc"/>
+<circle cx="848" cy="399" r="2.5" fill="#2f8f45"/>
+<path d="M892,399 L892,394" class="bc"/>
+<circle cx="892" cy="399" r="2.5" fill="#2f8f45"/>
+<path d="M936,399 L936,394" class="bc"/>
+<circle cx="936" cy="399" r="2.5" fill="#2f8f45"/>
+<path d="M980,399 L980,394" class="bc"/>
+<circle cx="980" cy="399" r="2.5" fill="#2f8f45"/>
+<rect x="840" y="232" width="30" height="30" rx="4" class="pe"/>
+<text x="855.0" y="251.0" class="xs" text-anchor="middle">PE</text>
+<rect x="884" y="232" width="30" height="30" rx="4" class="pe"/>
+<text x="899.0" y="251.0" class="xs" text-anchor="middle">PE</text>
+<rect x="928" y="232" width="30" height="30" rx="4" class="pe"/>
+<text x="943.0" y="251.0" class="xs" text-anchor="middle">PE</text>
+<rect x="972" y="232" width="30" height="30" rx="4" class="pe"/>
+<text x="987.0" y="251.0" class="xs" text-anchor="middle">PE</text>
+<rect x="840" y="276" width="30" height="30" rx="4" class="pe"/>
+<text x="855.0" y="295.0" class="xs" text-anchor="middle">PE</text>
+<rect x="884" y="276" width="30" height="30" rx="4" class="pe"/>
+<text x="899.0" y="295.0" class="xs" text-anchor="middle">PE</text>
+<rect x="928" y="276" width="30" height="30" rx="4" class="pe"/>
+<text x="943.0" y="295.0" class="xs" text-anchor="middle">PE</text>
+<rect x="972" y="276" width="30" height="30" rx="4" class="pe"/>
+<text x="987.0" y="295.0" class="xs" text-anchor="middle">PE</text>
+<rect x="840" y="320" width="30" height="30" rx="4" class="pe"/>
+<text x="855.0" y="339.0" class="xs" text-anchor="middle">PE</text>
+<rect x="884" y="320" width="30" height="30" rx="4" class="pe"/>
+<text x="899.0" y="339.0" class="xs" text-anchor="middle">PE</text>
+<rect x="928" y="320" width="30" height="30" rx="4" class="pe"/>
+<text x="943.0" y="339.0" class="xs" text-anchor="middle">PE</text>
+<rect x="972" y="320" width="30" height="30" rx="4" class="pe"/>
+<text x="987.0" y="339.0" class="xs" text-anchor="middle">PE</text>
+<rect x="840" y="364" width="30" height="30" rx="4" class="pe"/>
+<text x="855.0" y="383.0" class="xs" text-anchor="middle">PE</text>
+<rect x="884" y="364" width="30" height="30" rx="4" class="pe"/>
+<text x="899.0" y="383.0" class="xs" text-anchor="middle">PE</text>
+<rect x="928" y="364" width="30" height="30" rx="4" class="pe"/>
+<text x="943.0" y="383.0" class="xs" text-anchor="middle">PE</text>
+<rect x="972" y="364" width="30" height="30" rx="4" class="pe"/>
+<text x="987.0" y="383.0" class="xs" text-anchor="middle">PE</text>
+<text x="896" y="428" class="xs" text-anchor="middle">each w / i register drives a whole column / row</text>
+<path d="M730,250 L748,250" class="wire" marker-end="url(#a)"/>
+<path d="M470,470 L1040,470" class="bus"/>
+<text x="660" y="462" class="lbl" text-anchor="start">core dmem bus  (dmem_addr_o, dmem_wdata_o)</text>
+<path d="M600,450 L600,470" class="wire"/>
+<rect x="420" y="500" width="420" height="130" rx="10" class="sramc"/>
+<text x="434" y="524" class="t" text-anchor="start">SCRATCH_PAD</text>
+<text x="434" y="542" class="xs" text-anchor="start">0x4000–0x4FFF, 4 KB, selected by instruction type (SH / LBU / LB / LH)</text>
+<rect x="436" y="555" width="90" height="62" rx="8" class="sram"/>
+<text x="481.0" y="583.5" class="s" text-anchor="middle">SRAM 0</text>
+<text x="481.0" y="601.5" class="s" text-anchor="middle">8 × 1024</text>
+<rect x="536" y="555" width="90" height="62" rx="8" class="sram"/>
+<text x="581.0" y="583.5" class="s" text-anchor="middle">SRAM 1</text>
+<text x="581.0" y="601.5" class="s" text-anchor="middle">8 × 1024</text>
+<rect x="636" y="555" width="90" height="62" rx="8" class="sram"/>
+<text x="681.0" y="583.5" class="s" text-anchor="middle">SRAM 2</text>
+<text x="681.0" y="601.5" class="s" text-anchor="middle">8 × 1024</text>
+<rect x="736" y="555" width="90" height="62" rx="8" class="sram"/>
+<text x="781.0" y="583.5" class="s" text-anchor="middle">SRAM 3</text>
+<text x="781.0" y="601.5" class="s" text-anchor="middle">8 × 1024</text>
+<path d="M630,470 L630,500" class="wire" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="852" y="498" class="xs" text-anchor="start">rdata mux:</text>
+<text x="852" y="514" class="xs" text-anchor="start">spad_ready ? spad : dmem</text>
+<text x="852" y="534" class="xs" text-anchor="start">dmem_req_o masked</text>
+<text x="852" y="550" class="xs" text-anchor="start">during SPAD access</text>
+<rect x="150" y="700" width="880" height="72" rx="8" class="ext"/>
+<text x="590.0" y="733.5" class="t" text-anchor="middle">External memory  (MEMORY_TOP, testbench)</text>
+<text x="590.0" y="751.5" class="s" text-anchor="middle">one request served every 4 cycles</text>
+<path d="M210,320 L210,700" class="wire" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="220" y="680" class="lbl" text-anchor="start">imem_*  (cache refill)</text>
+<path d="M1010,470 L1010,700" class="wire" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="1000" y="680" class="lbl" text-anchor="end">dmem_*</text>
+<path d="M370,165 L440,165" class="wire" marker-end="url(#a)"/>
+<text x="405.0" y="159" class="lbl" text-anchor="middle">instr, hit</text>
+<path d="M440,199 L370,199" class="wire" marker-end="url(#a)"/>
+<text x="405.0" y="193" class="lbl" text-anchor="middle">addr, read</text>
+<rect x="20" y="788" width="18" height="14" rx="3" class="logic"/>
+<text x="44" y="800" class="xs" text-anchor="start">logic</text>
+<rect x="86.0" y="788" width="18" height="14" rx="3" class="reg"/>
+<text x="110.0" y="800" class="xs" text-anchor="start">register</text>
+<rect x="173.6" y="788" width="18" height="14" rx="3" class="sram"/>
+<text x="197.6" y="800" class="xs" text-anchor="start">SRAM macro</text>
+<rect x="275.6" y="788" width="18" height="14" rx="3" class="acc"/>
+<text x="299.6" y="800" class="xs" text-anchor="start">accelerator</text>
+<rect x="384.8" y="788" width="18" height="14" rx="3" class="ext"/>
+<text x="408.8" y="800" class="xs" text-anchor="start">outside the chip</text>
+</svg>
