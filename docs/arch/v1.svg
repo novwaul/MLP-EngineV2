@@ -201,7 +201,7 @@
 <path d="M600,450 L600,470" class="wire"/>
 <rect x="420" y="500" width="420" height="130" rx="10" class="sramc"/>
 <text x="434" y="524" class="t" text-anchor="start">SCRATCH_PAD</text>
-<text x="434" y="542" class="xs" text-anchor="start">0x4000–0x4FFF, 4 KB, selected by instruction type (SH / LBU / LB / LH)</text>
+<text x="434" y="542" class="xs" text-anchor="start">4096 × 8-bit entries, chosen by instruction type (SH / LBU / LB / LH)</text>
 <rect x="436" y="555" width="90" height="62" rx="8" class="sram"/>
 <text x="481.0" y="583.5" class="s" text-anchor="middle">SRAM 0</text>
 <text x="481.0" y="601.5" class="s" text-anchor="middle">8 × 1024</text>
