@@ -16,11 +16,51 @@ column *j* is output neuron *j* (`program/test_code/src/mlp_engine/v1/mlp.c`).
      all 16 PEs do `psum += input × weight` in one cycle. That is nine
      instructions per 16 MACs.
    - `MULHU` applies ReLU to all partial sums.
-   - `LBU` × 16 moves the compressed outputs to the scratchpad (layers 1 and
-     2), or `SB` × 16 writes them to external memory (layer 3).
-3. Layer 1's output stays in the scratchpad, and layer 2's output overwrites
-   the input area. The core takes the argmax of the four results in external
-   memory.
+   - `LBU` × 16 moves the outputs to the scratchpad (layers 1 and 2), or
+     `SB` × 16 writes them to external memory (layer 3).
+3. The core reads the 10 layer-3 outputs of each image from external memory
+   and takes the argmax.
+
+### Scratchpad storage
+
+- **Size:** 4 × `sky130_sram_1kbyte_1rw1r_8x1024_8` = 4096 entries of 8 bits.
+- **Addressing:** one entry per 32-bit word address. Address bits [13:12]
+  select the SRAM and bits [11:2] select the row, so the scratchpad spans
+  0x4000–0x7FFC with a 4-byte stride.
+- **Selection:** the scratchpad is chosen by instruction type
+  (`SH`/`LBU`/`LB`/`LH`), not by address. Its addresses overlap the weights in
+  external memory (from 0x5000), which are read with `LHU`.
+- **Write:** an entry stores bits [8:1] of the written value
+  (`write_data_i[8:1]`).
+- **Read:** an entry is returned as `{entry, 0}`, so the core sees
+  `entry << 1`.
+
+Layout used by the program (`SCRATCH_ADDR = 0x4000`):
+
+| Data | Entries | Address range | Notes |
+|---|---:|---|---|
+| FC1 bias | 128 | 0x4000–0x41FC | Written once with `SH` |
+| FC2 bias | 64 | 0x4200–0x42FC | Written once with `SH` |
+| FC3 bias | 10 | 0x4300–0x4324 | Written once with `SH` |
+| Input, 4 images × 784 | 3136 | 0x4328–0x7424 | Written per batch with `SH`, `[image][pixel]` |
+| FC1 output, 4 × 128 | 512 | 0x7428–0x7C24 | Written with `LBU`, `[image][neuron]` |
+| FC2 output, 4 × 64 | 256 | 0x4328–0x4724 | Overwrites the start of the input area |
+
+FC3 outputs go to external memory (`OUTPUT_ADDR`) with `SB`, as 4 × 12 words
+(10 used).
+
+### Arithmetic and bit widths
+
+| Step | Operation | Width |
+|---|---|---|
+| Weight load (`LHU`, external) | `data_i = {value[8:1], 1}` | 9-bit signed |
+| Input load (`LH`, scratchpad) | read `{entry, 0}` → `data_i = {entry, 1}` | 9-bit unsigned |
+| Bias load (`LB`, scratchpad) | `{entry, 1}`, zero-extended into the partial sum | 9-bit → 18-bit |
+| MAC (`MULH`, all 16 PEs) | `psum += (sext10(w) × zext10(a))[17:0]` | 18-bit partial sum, wraps on overflow (no detection) |
+| ReLU (`MULHU`) | `psum = psum > 0 ? psum : 0` | 18-bit |
+| Readout (`LBU`/`SB`) | `data_o = psum[17] ? 0x1FF : psum[16:8] + psum[7]` | 9-bit (saturate or round) |
+| Output to scratchpad (`LBU`) | stores `data_o[8:1]` | 8-bit entry |
+| Output to external memory (`SB`) | stores `data_o` zero-extended in a 32-bit word | 9-bit value |
 
 ## RTL fix for PnR
 

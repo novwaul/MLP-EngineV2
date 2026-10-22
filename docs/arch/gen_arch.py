@@ -186,7 +186,7 @@ s.line([(730, 250), (748, 250)])
 s.line([(470, 470), (1040, 470)], 'bus', end=False)
 s.text(660, 462, 'core dmem bus  (dmem_addr_o, dmem_wdata_o)', 'lbl')
 s.line([(600, 450), (600, 470)], end=False)
-s.group(420, 500, 420, 130, 'sramc', 'SCRATCH_PAD', '0x4000–0x4FFF, 4 KB, selected by instruction type (SH / LBU / LB / LH)')
+s.group(420, 500, 420, 130, 'sramc', 'SCRATCH_PAD', '4096 × 8-bit entries, chosen by instruction type (SH / LBU / LB / LH)')
 for k in range(4):
     s.box(436 + k * 100, 555, 90, 62, 'sram', f'SRAM {k}', ['8 × 1024'], 's')
 s.line([(630, 470), (630, 500)], start=True)
