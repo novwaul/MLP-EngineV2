@@ -1,45 +1,6 @@
 # mlp_engine/v1
 
-The baseline core plus a 4×4 broadcast MAC array and a 4 KB scratchpad. Both
-are controlled by repurposed standard RISC-V instructions.
-
 <p align="center"><img src="../../../docs/arch/v1.svg" alt="mlp_engine/v1 architecture" width="900"></p>
-
-## Blocks
-
-| Block | Description |
-|---|---|
-| `CPU_TOP` (`cpu_top.sv`) | Instruction cache, core, and scratchpad. The scratchpad shares the core's dmem address/write-data bus; `rdata = spad_ready ? spad : dmem`. |
-| `INSTR_CACHE` | Same as `scalar_core`. |
-| `SCALAR_CORE` (`core/scalar_core.sv`) | Baseline multi-cycle core plus array control. The array's input is the core's load write-back data (one element per instruction). |
-| `DECODER` (`core/decoder.sv`) | Decodes `LB`/`LH`/`LHU`/`SB`/`LBU`/`MULH`/`MULHU` as array/scratchpad commands. |
-| `SYSTOLIC_ARRAY` (`core/systolic_array.sv`) | 4×4 broadcast MAC array. Weight register `registers[j]` drives every PE in column j, and input register `registers[4+i]` drives every PE in row i. All PEs compute in the same cycle. |
-| `SCRATCH_PAD` (`scratch_pad/scratch_pad.sv`) | 0x4000–0x4FFF, 4 KB, built from 4 × `sky130_sram_1kbyte_1rw1r_8x1024_8`. Selected by instruction type (`SH`/`LBU`/`LB`/`LH`). |
-
-## Instruction mapping (standard opcodes repurposed)
-
-| Instruction | v1 meaning |
-|---|---|
-| `LB` | scratchpad → array PE buffer (bias) |
-| `LBU` | array PE buffer → scratchpad |
-| `LH` | scratchpad → array data buffer |
-| `LHU` | external memory → array data buffer |
-| `SB` | array PE buffer → external memory |
-| `SH` | external memory → scratchpad |
-| `MULH` | MAC in every PE |
-| `MULHU` | ReLU (negative → 0) in every PE |
-
-## Data widths in the array
-
-| Item | Width | Notes |
-|---|---|---|
-| Activation | 9-bit unsigned | Bits [8:1] of the loaded 32-bit value, with LSB forced to 1 (`{rf_write_data[8:1], 1'b1}`) |
-| Weight | 9-bit signed | Same extraction |
-| Bias | 9-bit | Loaded from the scratchpad with `LB` and zero-extended into the 18-bit partial sum |
-| Product | 18-bit | 10-bit signed weight × 10-bit zero-extended activation = 20 bits, truncated to 18 bits |
-| Partial sum | 18-bit | Accumulated by `MULH` (wraps on overflow, no detection); `MULHU` sets negative values to 0 |
-| Output | 9-bit | MSB of the partial sum = 1 → `0x1FF` (saturate); otherwise `psum[16:8] + psum[7]` (round) |
-| Scratchpad entry | 8-bit | Stores bits [8:1] of the written value; on read the LSB is forced back to 1 |
 
 ## RTL fix for PnR
 
