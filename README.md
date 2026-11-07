@@ -81,12 +81,12 @@ Compiled with the exact same default RISC-V GCC flags (`-march=rv32im_zicsr -mab
 ### Why `mlpv2c` improves performance
 
 1. **Invariant `ACC.CFG` hoisting (−74.2% `ACC.CFG` instructions):**
-   - The hand-written `run_layer()` re-issues 6 `ACC.CFG` instructions inside every $K$-tile (`49` tiles per output column block in `fc1`).
+   - The hand-written `layer()` calls `config_block()` on every $K$-tile (`49` tiles per output column block in `fc1`), re-issuing all 8 `ACC.CFG` registers even though 6 of them do not change across $K$-tiles.
    - `mlpv2c` hoists layer-invariant strides (`ACC_A_STRIDE`, `ACC_W_STRIDE`, `ACC_OUT_STRIDE`), layer-invariant shape (`ACC_SHAPE` when `in_features % 16 == 0` and `out_features % 4 == 0`), and column-invariant addresses (`ACC_BIAS`, `ACC_OUT`) out of the inner $K$-tile loop. Only `ACC_A` and `ACC_W` remain inside the $K$ loop, reducing `ACC.CFG` instructions per 4-image batch from **13,664 to 3,532**.
 2. **Per-layer LIR AST specialization:**
-   - Instead of a generic `run_layer(const layer_t *)` that dereferences runtime struct fields and calls `min_u()` on every tile, `mlpv2c` synthesizes dedicated functions (`run_fc1`, `run_fc2`, `run_fc3`) with compile-time immediates and eliminates dead tail-tile branches when `in_features` or `out_features` is an exact multiple of the hardware tile size.
+   - Instead of a generic `layer()` / `config_block()` pair that passes 7–10 runtime arguments on the stack and calls `min_u()` on every tile, `mlpv2c` synthesizes dedicated functions (`run_fc1`, `run_fc2`, `run_fc3`) with compile-time immediates and eliminates dead tail-tile branches when `in_features` or `out_features` is an exact multiple of the hardware tile size.
 3. **Word-unrolled `pack()`:**
-   - Packs 4 bytes per loop iteration (`count >> 2`) instead of 1 byte per iteration, cutting both one-time weight packing and per-batch input packing overhead by ~4×.
+   - Replaces the nested byte-by-byte inner loop (`for (j = 0; j < 4 && i + j < count; j++)`) with an unrolled 4-byte word pack (`count >> 2`), eliminating per-byte loop condition checks and branches during weight and input packing.
 
 ## Environment setup
 
