@@ -9,5 +9,9 @@ program/test_code/image/
 program/test_code/label/
 program/test_code/parameter/
 
+# Python cache
+__pycache__/
+*.py[cod]
+
 # macOS
 .DS_Store

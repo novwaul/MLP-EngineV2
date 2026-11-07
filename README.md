@@ -16,6 +16,7 @@ on a 2200×2200 µm die.
 
 - [mlp_engine/v2 overview](#mlp_enginev2-overview)
 - [Motivation for v1 → v2](#motivation-for-v1--v2)
+- [Compiler (mlpv2c)](#compiler-mlpv2c)
 - [Environment setup](#environment-setup)
 - [How to run](#how-to-run)
 - [Results](#results)
@@ -70,6 +71,22 @@ on a 2200×2200 µm die.
   - An output-stationary systolic array: operands move one PE per cycle through registers.
   - Wire length and the per-PE critical path stay constant as N grows.
 - **Cost:** compared with v1, v2 uses 1.28× the area and 1.84× the power.
+
+## Compiler (mlpv2c)
+
+[`compiler/`](compiler/README.md) provides `mlpv2c`, an ahead-of-time neural network compiler targeting `mlp_engine/v2` (`MLP_V2_TOP`). It traces a PyTorch `nn.Module` ([`compiler/model.py`](compiler/model.py)) into an ONNX computation graph (`.onnx`), plans the 4 KB scratchpad layout (`0x4000–0x4FFF`), schedules double-buffered systolic tiles, and lowers the schedule into a Low-Level IR (AST) to emit `mlp.h` and `mlp.c`.
+
+Compiled with the exact same default RISC-V GCC flags (`-march=rv32im_zicsr -mabi=ilp32`, `-O0`) as the hand-written `mlp_engine/v2` firmware, `mlpv2c`-generated code reduces cycle count by **66–70% (2.94×–3.30× speedup)** and retired instructions (`minstret`) by **89%** while preserving identical classification accuracy (`100.00%` at #10/#100, `96.60%` at #1000, `96.72%` at #10000).
+
+### Why `mlpv2c` improves performance
+
+1. **Invariant `ACC.CFG` hoisting (−74.2% `ACC.CFG` instructions):**
+   - The hand-written `run_layer()` re-issues 6 `ACC.CFG` instructions inside every $K$-tile (`49` tiles per output column block in `fc1`).
+   - `mlpv2c` hoists layer-invariant strides (`ACC_A_STRIDE`, `ACC_W_STRIDE`, `ACC_OUT_STRIDE`), layer-invariant shape (`ACC_SHAPE` when `in_features % 16 == 0` and `out_features % 4 == 0`), and column-invariant addresses (`ACC_BIAS`, `ACC_OUT`) out of the inner $K$-tile loop. Only `ACC_A` and `ACC_W` remain inside the $K$ loop, reducing `ACC.CFG` instructions per 4-image batch from **13,664 to 3,532**.
+2. **Per-layer LIR AST specialization:**
+   - Instead of a generic `run_layer(const layer_t *)` that dereferences runtime struct fields and calls `min_u()` on every tile, `mlpv2c` synthesizes dedicated functions (`run_fc1`, `run_fc2`, `run_fc3`) with compile-time immediates and eliminates dead tail-tile branches when `in_features` or `out_features` is an exact multiple of the hardware tile size.
+3. **Word-unrolled `pack()`:**
+   - Packs 4 bytes per loop iteration (`count >> 2`) instead of 1 byte per iteration, cutting both one-time weight packing and per-batch input packing overhead by ~4×.
 
 ## Environment setup
 
@@ -152,6 +169,17 @@ docker exec -d librelane bash -c "cd /workspace/librelane/<design>; bash run.sh 
 
 PnR settings and their rationale: [librelane/README.md](librelane/README.md).
 
+### Compiler (`mlpv2c`)
+
+```bash
+# 1. Extract ONNX from PyTorch (compiler/model.py) and generate mlp.h / mlp.c
+python3 compiler/mlpv2c.py compiler/model.py -o compiler/build
+
+# 2. (Optional) Copy generated C sources into mlp_engine/v2 and run RTL simulation
+cp compiler/build/mlp.h compiler/build/mlp.c program/test_code/src/mlp_engine/v2/
+make -C sim/rtl_sim/tb/mlp_engine/v2 run TB_NUM=10
+```
+
 ## Results
 
 sky130A, LibreLane 3.0.2, 2200×2200 µm die, same PnR settings for all designs.
@@ -191,12 +219,12 @@ Mcycle and accuracy come from Verilator RTL simulation, cross-checked at #10 wit
 
 ### Throughput (#10000)
 
-| Metric | scalar_core | mlp_engine/v1 | mlp_engine/v2 |
-|---|---:|---:|---:|
-| Cycles per image | 11,489,724 (100%) | 4,367,390 (38.0%) | 881,179 (7.7%) |
-| **Latency per image (ms)** | 2,068 (100%) | 786 (38.0%) | 159 (7.7%) |
-| **Throughput (img/s)** | 0.48 (100%) | 1.27 (263%) | 6.30 (1,304%) |
-| **Throughput per area (img/s/mm²)** | 0.58 (100%) | 0.69 (119%) | 2.69 (461%) |
+| Metric | scalar_core | mlp_engine/v1 | mlp_engine/v2 | mlp_engine/v2 (mlpv2c) |
+|---|---:|---:|---:|---:|
+| Cycles per image | 11,489,724 (100%) | 4,367,390 (38.0%) | 881,179 (7.7%) | 299,510 (2.6%) |
+| **Latency per image (ms)** | 2,068 (100%) | 786 (38.0%) | 159 (7.7%) | 54 (2.6%) |
+| **Throughput (img/s)** | 0.48 (100%) | 1.27 (263%) | 6.30 (1,304%) | 18.55 (3,836%) |
+| **Throughput per area (img/s/mm²)** | 0.58 (100%) | 0.69 (119%) | 2.69 (461%) | 7.90 (1,356%) |
 
 - Latency = mcycle(#10000) / 10000 × 180 ns. Throughput is its inverse.
 - Throughput per area uses the cell area (std cells + SRAM).
@@ -208,6 +236,7 @@ Mcycle and accuracy come from Verilator RTL simulation, cross-checked at #10 wit
 | scalar_core | 06D932D0 (100%) | 447BEBCE (100%) | 2ACD74DD5 (100%) | 1AC068C6A4 (100%) |
 | mlp_engine/v1 | 031FE6C6 (45.6%) | 1A086B44 (38.0%) | 104522376 (38.0%) | A2B2AD817 (38.0%) |
 | mlp_engine/v2 | 0184B00A (22.2%) | 06271870 (9.0%) | 35573E4A (7.8%) | 20D39429D (7.7%) |
+| mlp_engine/v2 (mlpv2c) | 0075DEB5 (6.7%) | 020A4E09 (3.0%) | 121578C8 (2.6%) | B2858721 (2.6%) |
 
 ### Accuracy (%)
 
@@ -216,6 +245,7 @@ Mcycle and accuracy come from Verilator RTL simulation, cross-checked at #10 wit
 | scalar_core | 100.00 | 100.00 | 96.80 | 96.76 |
 | mlp_engine/v1 | 100.00 | 99.00 | 91.80 | 92.68 |
 | mlp_engine/v2 | 100.00 | 100.00 | 96.60 | 96.72 |
+| mlp_engine/v2 (mlpv2c) | 100.00 | 100.00 | 96.60 | 96.72 |
 
 ### Gate-level simulation (#10, 2200-die netlists)
 
