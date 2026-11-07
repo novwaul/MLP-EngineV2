@@ -6,10 +6,10 @@
 
 ## Compiler Pipeline
 
-1. **PyTorch Symbolic Forward Tracer & ONNX Frontend ([`model.py`](model.py), [`frontend.py`](frontend.py), [`onnx_proto.py`](onnx_proto.py))**
+1. **PyTorch ONNX Exporter & ONNX Frontend ([`model.py`](model.py), [`frontend.py`](frontend.py))**
    - **PyTorch Model ([`model.py`](model.py)):** Defines `MnistMLP(nn.Module)` (`784 -> 128 -> 64 -> 10` with `ReLU`) and loads the integer parameters.
-   - **PyTorch → ONNX ([`convert_pytorch_to_onnx()`](frontend.py)):** Symbolically traces `model.forward(x)` on a PyTorch `nn.Module` to extract `Gemm` and `Relu` operators and `int8` initializers into a `.onnx` binary.
-   - **ONNX Parser ([`load_onnx()`](frontend.py)):** Parses `ModelProto` / `GraphProto`, fuses `Gemm` (or `MatMul + Add`) with `Relu`, transposes `(in_features, out_features)` weights when `transB=0`, and validates hardware bounds ([`ir.py`](ir.py)).
+   - **PyTorch → ONNX ([`convert_pytorch_to_onnx()`](frontend.py)):** Exports a PyTorch `nn.Module` to `.onnx` using PyTorch's built-in `torch.onnx.export()`.
+   - **ONNX Parser ([`load_onnx()`](frontend.py)):** Uses `onnx.load()` and `onnx.numpy_helper.to_array()` to parse `ModelProto` / `GraphProto`, fuse `Gemm` (or `MatMul + Add`) with `Relu`, transpose `(in_features, out_features)` weights when `transB=0`, and validate hardware bounds ([`ir.py`](ir.py)).
 
 2. **Scratchpad & RAM Memory Planner ([`memory_planner.py`](memory_planner.py))**
    - Allocates layer output buffers in the 4 KB Scratchpad (`0x4000–0x4FFF`, 4 × 1 KB SRAM banks) using bank-separated placement or automatic **2-bank Liveness Ping-Pong (`0x4000` ↔ `0x4400`)** for deep MLPs.

@@ -12,34 +12,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List
 
-try:
-    import torch.nn as nn  # type: ignore
-except ImportError:
-    class Module:
-        def __call__(self, *args, **kwargs):
-            return self.forward(*args, **kwargs)
-
-        def named_modules(self):
-            yield ("", self)
-            for k, v in self.__dict__.items():
-                if isinstance(v, Module):
-                    yield (k, v)
-
-    class Linear(Module):
-        def __init__(self, in_features: int, out_features: int) -> None:
-            self.in_features = in_features
-            self.out_features = out_features
-            self.weight = [0] * (out_features * in_features)
-            self.bias = [0] * out_features
-
-    class ReLU(Module):
-        pass
-
-    class nn:  # type: ignore
-        Module = Module
-        Linear = Linear
-        ReLU = ReLU
-
+import torch
+import torch.nn as nn
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PARAM_DIR = ROOT / "program" / "test_code" / "parameter"
@@ -57,7 +31,7 @@ class MnistMLP(nn.Module):
         self.fc3 = nn.Linear(64, 10)
         self.relu3 = nn.ReLU()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.relu1(self.fc1(x))
         x = self.relu2(self.fc2(x))
         x = self.relu3(self.fc3(x))
@@ -77,19 +51,14 @@ def _parse_hex_lines(text: str) -> List[int]:
 
 def load_pretrained_parameters(model: MnistMLP, param_dir: Path = DEFAULT_PARAM_DIR) -> None:
     """Load integer weights and biases from `program/test_code/parameter/` into `MnistMLP`."""
-    for idx, layer in enumerate((model.fc1, model.fc2, model.fc3), start=1):
-        w_vals = _parse_hex_lines((param_dir / f"fc{idx}_weight.txt").read_text(encoding="utf-8"))
-        b_vals = _parse_hex_lines((param_dir / f"fc{idx}_bias.txt").read_text(encoding="utf-8"))
-        if hasattr(layer.weight, "data"):
-            import torch  # type: ignore
-
-            layer.weight.data = torch.tensor(
-                w_vals, dtype=torch.float32
-            ).reshape(layer.out_features, layer.in_features)
-            layer.bias.data = torch.tensor(b_vals, dtype=torch.float32)
-        else:
-            layer.weight = w_vals
-            layer.bias = b_vals
+    with torch.no_grad():
+        for idx, layer in enumerate((model.fc1, model.fc2, model.fc3), start=1):
+            w_vals = _parse_hex_lines((param_dir / f"fc{idx}_weight.txt").read_text(encoding="utf-8"))
+            b_vals = _parse_hex_lines((param_dir / f"fc{idx}_bias.txt").read_text(encoding="utf-8"))
+            layer.weight.copy_(
+                torch.tensor(w_vals, dtype=torch.float32).reshape(layer.out_features, layer.in_features)
+            )
+            layer.bias.copy_(torch.tensor(b_vals, dtype=torch.float32))
 
 
 def build_model(param_dir: Path = DEFAULT_PARAM_DIR) -> MnistMLP:

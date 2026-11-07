@@ -236,7 +236,7 @@ Mcycle and accuracy come from Verilator RTL simulation, cross-checked at #10 wit
 | scalar_core | 06D932D0 (100%) | 447BEBCE (100%) | 2ACD74DD5 (100%) | 1AC068C6A4 (100%) |
 | mlp_engine/v1 | 031FE6C6 (45.6%) | 1A086B44 (38.0%) | 104522376 (38.0%) | A2B2AD817 (38.0%) |
 | mlp_engine/v2 | 0184B00A (22.2%) | 06271870 (9.0%) | 35573E4A (7.8%) | 20D39429D (7.7%) |
-| mlp_engine/v2 (mlpv2c) | 0075DEB5 (6.7%) | 020A4E09 (3.0%) | 121578C8 (2.6%) | B2858721 (2.6%) |
+| mlp_engine/v2 (mlpv2c) | 0075DEB5 (6.7%) | 020A4E09 (3.0%) | 121578C8 (2.6%) | B28586FD (2.6%) |
 
 ### Accuracy (%)
 
