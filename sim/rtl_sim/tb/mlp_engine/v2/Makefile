@@ -37,9 +37,9 @@ VERILOG_SOURCES := \
     $(RTL_DIR)/memory/memory_top.sv \
     $(RTL_DIR)/cache/submodule/cache_sram.sv \
     $(RTL_DIR)/cache/instr_cache.sv \
-    $(RTL_DIR)/scalar_core/core/alu.sv \
-    $(RTL_DIR)/scalar_core/core/csr.sv \
-    $(RTL_DIR)/scalar_core/core/regfile.sv \
+    $(RTL_DIR)/mlp_engine/v2/core/alu.sv \
+    $(RTL_DIR)/mlp_engine/v2/core/csr.sv \
+    $(RTL_DIR)/mlp_engine/v2/core/regfile.sv \
     $(RTL_DIR)/mlp_engine/v2/core/decoder.sv \
     $(RTL_DIR)/mlp_engine/v2/core/scalar_core.sv \
     $(RTL_DIR)/mlp_engine/v2/cpu_top.sv \
