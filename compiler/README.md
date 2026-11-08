@@ -26,6 +26,12 @@
 ## Quick Start
 
 ```bash
-# Compile PyTorch model (compiler/model.py -> mnist_mlp.onnx -> mlp.h / mlp.c)
+# 1. Create and activate the virtual environment
+/usr/bin/python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install "numpy<2" torch onnx
+
+# 2. Compile PyTorch model (compiler/model.py -> mnist_mlp.onnx -> mlp.h / mlp.c)
 python3 compiler/mlpv2c.py compiler/model.py -o compiler/build
 ```

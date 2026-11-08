@@ -9,9 +9,10 @@ program/test_code/image/
 program/test_code/label/
 program/test_code/parameter/
 
-# Python cache
+# Python cache and virtual environment
 __pycache__/
 *.py[cod]
+.venv/
 
 # macOS
 .DS_Store

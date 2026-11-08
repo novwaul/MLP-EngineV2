@@ -142,6 +142,18 @@ cd program/test_code
 unzip -o image.zip && unzip -o label.zip && unzip -o parameter.zip
 ```
 
+### Compiler virtual environment (`.venv`)
+
+`mlpv2c` uses PyTorch (`torch`) and `onnx` inside a local Python virtual
+environment (`.venv`):
+
+```bash
+/usr/bin/python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install "numpy<2" torch onnx
+```
+
 ## How to run
 
 ### Program and simulation (`sim` container)
@@ -172,10 +184,13 @@ PnR settings and their rationale: [librelane/README.md](librelane/README.md).
 ### Compiler (`mlpv2c`)
 
 ```bash
-# 1. Extract ONNX from PyTorch (compiler/model.py) and generate mlp.h / mlp.c
+# 1. Activate the virtual environment (or invoke .venv/bin/python3 directly)
+source .venv/bin/activate
+
+# 2. Extract ONNX from PyTorch (compiler/model.py) and generate mlp.h / mlp.c
 python3 compiler/mlpv2c.py compiler/model.py -o compiler/build
 
-# 2. (Optional) Copy generated C sources into mlp_engine/v2 and run RTL simulation
+# 3. (Optional) Copy generated C sources into mlp_engine/v2 and run RTL simulation
 cp compiler/build/mlp.h compiler/build/mlp.c program/test_code/src/mlp_engine/v2/
 make -C sim/rtl_sim/tb/mlp_engine/v2 run TB_NUM=10
 ```
