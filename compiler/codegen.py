@@ -37,6 +37,7 @@ from .lir import (
     IncludeDecl,
     IntImm,
     ParamDecl,
+    RawDecl,
     ReturnStmt,
     SourceUnit,
     StaticArrayDecl,
@@ -650,10 +651,36 @@ def lower_to_source_lir(schedule: ProgramSchedule) -> SourceUnit:
         IncludeDecl("accel.h", system=False),
         IncludeDecl("mlp.h", system=False),
         DefineDecl("NOINIT", '__attribute__((section(".noinit"), aligned(4)))'),
-        DefineDecl("SET_REG(reg, value)", '__asm__ volatile("mv " reg ", %0" :: "r"(value))'),
+        DefineDecl(
+            "SET_REG(reg, value)",
+            '__asm__ volatile("mv " reg ", %0" : : "r"(value) : reg)',
+            comment="TB register clobbered",
+        ),
         DefineDecl("EXIT_MAGIC", IntImm(99999)),
         DefineDecl("ADDR(p)", "((uint32_t)(uintptr_t)(p))"),
     ]
+
+    # The testbench samples x25-x31 every cycle (x25 exit magic, x26 images
+    # done, x27 images correct, x28/x29 mcycle, x30/x31 minstret).  Reserve
+    # them file-scope so no optimization level may allocate them to a C value;
+    # the only writes are the clobbered SET_REG stores in main.  -O0 never
+    # used these registers, so its code generation is unchanged.
+    decls.append(RawDecl(
+        "register unsigned rsv_exit        asm(\"x25\");",
+        comment=(
+            "Testbench reporting channel: x25 exit magic, x26 images done,\n"
+            "x27 images correct, x28/x29 mcycle, x30/x31 minstret.\n"
+            "x25-x31 (s9-s11/t3-t6) are reserved so the compiler can never\n"
+            "allocate them to a C value (it otherwise does so for the csrrs\n"
+            "outputs and -O3 temporaries), corrupting the reported counts."
+        ),
+    ))
+    decls.append(RawDecl("register unsigned rsv_images_done asm(\"x26\");"))
+    decls.append(RawDecl("register unsigned rsv_images_corr asm(\"x27\");"))
+    decls.append(RawDecl("register unsigned rsv_mcycle_lo   asm(\"x28\");"))
+    decls.append(RawDecl("register unsigned rsv_mcycle_hi   asm(\"x29\");"))
+    decls.append(RawDecl("register unsigned rsv_minstret_lo asm(\"x30\");"))
+    decls.append(RawDecl("register unsigned rsv_minstret_hi asm(\"x31\");"))
 
     for b in mplan.layers:
         decls.append(StaticArrayDecl("uint32_t", f"{b.layer_name}_w", b.packed_w_words))

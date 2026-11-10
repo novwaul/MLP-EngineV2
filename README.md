@@ -252,6 +252,8 @@ Mcycle and accuracy come from Verilator RTL simulation, cross-checked at #10 wit
 | mlp_engine/v1 | 031FE6C6 (45.6%) | 1A086B44 (38.0%) | 104522376 (38.0%) | A2B2AD817 (38.0%) |
 | mlp_engine/v2 | 0184B00A (22.2%) | 06271870 (9.0%) | 35573E4A (7.8%) | 20D39429D (7.7%) |
 | mlp_engine/v2 (mlpv2c) | 0075DEB5 (6.7%) | 020A4E09 (3.0%) | 121578C8 (2.6%) | B28586FD (2.6%) |
+| mlp_engine/v2 (-O3) | 003648B5 (3.1%) | 011C0BA2 (1.6%) | 0A37F86B (1.5%) | 654E2AB7 (1.5%) |
+| mlp_engine/v2 (mlpv2c, -O3) | 0033A6E7 (2.9%) | 010987E3 (1.5%) | 097DD97E (1.4%) | 5E0936F4 (1.4%) |
 
 ### Accuracy (%)
 
@@ -261,6 +263,8 @@ Mcycle and accuracy come from Verilator RTL simulation, cross-checked at #10 wit
 | mlp_engine/v1 | 100.00 | 99.00 | 91.80 | 92.68 |
 | mlp_engine/v2 | 100.00 | 100.00 | 96.60 | 96.72 |
 | mlp_engine/v2 (mlpv2c) | 100.00 | 100.00 | 96.60 | 96.72 |
+| mlp_engine/v2 (-O3) | 100.00 | 100.00 | 96.60 | 96.72 |
+| mlp_engine/v2 (mlpv2c, -O3) | 100.00 | 100.00 | 96.60 | 96.72 |
 
 ### Gate-level simulation (#10, 2200-die netlists)
 

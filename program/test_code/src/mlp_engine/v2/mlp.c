@@ -20,10 +20,25 @@ static uint32_t fc2_b[HIDDEN2_SIZE / 4]                NOINIT;
 static uint32_t fc3_b[(OUTPUT_SIZE + 3) / 4]           NOINIT;
 static uint32_t input[ARRAY_SIZE * INPUT_SIZE / 4]     NOINIT;
 
-// x25-x31 report to the testbench as in v1 (-O0 never allocates them):
-// x26 images done, x27 correct count, x28-x31 cycle/instret, x25 exit.
-#define SET_REG(reg, value) __asm__ volatile("mv " reg ", %0" :: "r"(value))
+// x25-x31 report to the testbench as in v1: x26 images done, x27 correct
+// count, x28-x31 cycle/instret, x25 exit magic.
+//
+// Two guards keep every optimization level from corrupting the channel:
+// (1) the clobber list stops SET_REG from letting the compiler keep the
+// target register live, and (2) the file-scope reservations below stop
+// GCC from allocating x25-x31 (s9-s11/t3-t6) to any C value, which it
+// otherwise does for the csrrs outputs and -O3 temporaries. -O0 never
+// used these registers, so its code generation is unchanged.
+#define SET_REG(reg, value) __asm__ volatile("mv " reg ", %0" : : "r"(value) : reg)
 #define EXIT_MAGIC 99999
+
+register unsigned rsv_exit        asm("x25");
+register unsigned rsv_images_done asm("x26");
+register unsigned rsv_images_corr asm("x27");
+register unsigned rsv_mcycle_lo   asm("x28");
+register unsigned rsv_mcycle_hi   asm("x29");
+register unsigned rsv_minstret_lo asm("x30");
+register unsigned rsv_minstret_hi asm("x31");
 
 #define ADDR(p) ((uint32_t)(uintptr_t)(p))
 

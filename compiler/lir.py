@@ -257,6 +257,14 @@ class StaticArrayDecl(TopDecl):
 
 
 @dataclass
+class RawDecl(TopDecl):
+    """Raw C declaration emitted verbatim (no LIR lowering)."""
+
+    text: str
+    comment: Optional[str] = None
+
+
+@dataclass
 class ParamDecl:
     """Function parameter `c_type name`."""
 
@@ -481,6 +489,14 @@ class CCodeEmitter:
             if decl.comment:
                 line = f"{line}  // {decl.comment}"
             return [line]
+
+        if isinstance(decl, RawDecl):
+            lines: List[str] = []
+            if decl.comment:
+                for cline in decl.comment.splitlines():
+                    lines.append(f"// {cline}")
+            lines.append(decl.text)
+            return lines
 
         if isinstance(decl, StaticArrayDecl):
             suffix = f" {decl.attr}" if decl.attr else ""

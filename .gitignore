@@ -3,6 +3,7 @@ librelane/**/runs/
 
 # Build outputs
 build/
+!compiler/build/
 
 # Test data
 program/test_code/image/
