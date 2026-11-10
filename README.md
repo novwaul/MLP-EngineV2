@@ -198,9 +198,14 @@ source .venv/bin/activate
 # 2. Extract ONNX from PyTorch (compiler/model.py) and generate mlp.h / mlp.c
 python3 compiler/mlpv2c.py compiler/model.py -o compiler/build
 
-# 3. (Optional) Copy generated C sources into mlp_engine/v2 and run RTL simulation
-cp compiler/build/mlp.h compiler/build/mlp.c program/test_code/src/mlp_engine/v2/
-make -C sim/rtl_sim/tb/mlp_engine/v2 run TB_NUM=10
+# 3. (Optional) Build and simulate the generated firmware. compiler/build holds the
+# program scaffolding (accel.h, start.S, sections.lds, Makefile), so the sources never
+# leave the compiler tree; the simulation's PROGRAM= points it at compiler/build.
+make -C compiler/build TB_NUM=10
+make -C sim/rtl_sim/tb/mlp_engine/v2 run TB_NUM=10 PROGRAM=$PWD/compiler/build
+
+# The build seds NUM_OF_TEST into mlp.h in place; restore it after a TB_NUM != 10 run
+git checkout -- compiler/build/mlp.h
 ```
 
 ## Results
