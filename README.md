@@ -203,9 +203,6 @@ python3 compiler/mlpv2c.py compiler/model.py -o compiler/build
 # leave the compiler tree; the simulation's PROGRAM= points it at compiler/build.
 make -C compiler/build TB_NUM=10
 make -C sim/rtl_sim/tb/mlp_engine/v2 run TB_NUM=10 PROGRAM=$PWD/compiler/build
-
-# The build seds NUM_OF_TEST into mlp.h in place; restore it after a TB_NUM != 10 run
-git checkout -- compiler/build/mlp.h
 ```
 
 ## Results
