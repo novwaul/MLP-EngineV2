@@ -162,8 +162,16 @@ pip install "numpy<2" torch onnx
 # RISC-V program only → program/test_code/src/<design>/build/image_<N>_<tag>/
 make -C program/test_code/src/<design> TB_NUM=10
 
+# ...with the -O3 firmware (the "-O3" rows in Results). CFLAGS is a make variable, so the
+# command-line value overrides the Makefile's without editing it; the trailing -Wl must
+# stay so the rule still forms -Wl,-Bstatic.
+make -C program/test_code/src/<design> TB_NUM=10 CFLAGS="-march=rv32im_zicsr -mabi=ilp32 -O3 -Wl"
+
 # RTL simulation (rebuilds the program with the same run tag); N = 10 / 100 / 1000 / 10000
 make -C sim/rtl_sim/tb/<design> run TB_NUM=10
+
+# ...same, with the -O3 firmware: command-line variables are also passed to the program sub-make
+make -C sim/rtl_sim/tb/<design> run TB_NUM=10 CFLAGS="-march=rv32im_zicsr -mabi=ilp32 -O3 -Wl"
 
 # Gate-level simulation of the latest PnR netlist (or NETLIST=...)
 make -C sim/pnl_sim/tb/<design> run
